@@ -18,6 +18,7 @@ import {
   signInWithPopup,
   GoogleAuthProvider,
   GithubAuthProvider,
+  UserCredential
 } from 'firebase/auth';
 import { auth, db } from '../config/firebase';
 
@@ -27,45 +28,92 @@ const githubProvider = new GithubAuthProvider();
 export const authAPI = {
   login: async (email: string, password: string) => {
     try {
-      const userCredential = await signInWithEmailAndPassword(auth, email, password);
+      const userCredential: UserCredential = await signInWithEmailAndPassword(auth, email, password);
+      const token = await userCredential.user.getIdToken();
+      
+      // Get additional user data from Firestore
+      const userDoc = await getDoc(doc(db, 'users', userCredential.user.uid));
+      const userData = userDoc.data();
+
       return {
-        token: await userCredential.user.getIdToken(),
-        user: userCredential.user
+        token,
+        user: {
+          id: userCredential.user.uid,
+          email: userCredential.user.email,
+          name: userData?.name || userCredential.user.displayName,
+          role: userData?.role || 'user',
+          status: 'online'
+        }
       };
-    } catch (error) {
-      throw new Error('Login failed');
+    } catch (error: any) {
+      console.error('Login error:', error);
+      throw new Error(error.message || 'Login failed');
     }
   },
 
   loginWithOAuth: async (provider: 'github' | 'google') => {
     try {
       const authProvider = provider === 'google' ? googleProvider : githubProvider;
-      const result = await signInWithPopup(auth, authProvider);
+      const userCredential: UserCredential = await signInWithPopup(auth, authProvider);
+      const token = await userCredential.user.getIdToken();
+
+      // Create or update user document in Firestore
+      const userRef = doc(db, 'users', userCredential.user.uid);
+      const userDoc = await getDoc(userRef);
+      
+      if (!userDoc.exists()) {
+        await setDoc(userRef, {
+          email: userCredential.user.email,
+          name: userCredential.user.displayName,
+          role: 'user',
+          status: 'online',
+          createdAt: serverTimestamp()
+        });
+      }
+
       return {
-        token: await result.user.getIdToken(),
-        user: result.user
+        token,
+        user: {
+          id: userCredential.user.uid,
+          email: userCredential.user.email,
+          name: userCredential.user.displayName,
+          role: 'user',
+          status: 'online'
+        }
       };
-    } catch (error) {
-      throw new Error(`${provider} login failed`);
+    } catch (error: any) {
+      console.error('OAuth login error:', error);
+      throw new Error(error.message || `${provider} login failed`);
     }
   },
 
   register: async (name: string, email: string, password: string) => {
     try {
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-      await updateDoc(doc(db, 'users', userCredential.user.uid), {
+      const token = await userCredential.user.getIdToken();
+
+      // Create user document in Firestore
+      await setDoc(doc(db, 'users', userCredential.user.uid), {
         name,
         email,
         role: 'user',
         status: 'online',
         createdAt: serverTimestamp()
       });
+
       return {
-        token: await userCredential.user.getIdToken(),
-        user: userCredential.user
+        token,
+        user: {
+          id: userCredential.user.uid,
+          email,
+          name,
+          role: 'user',
+          status: 'online'
+        }
       };
-    } catch (error) {
-      throw new Error('Registration failed');
+    } catch (error: any) {
+      console.error('Registration error:', error);
+      throw new Error(error.message || 'Registration failed');
     }
   },
 
@@ -73,10 +121,11 @@ export const authAPI = {
     try {
       await signOut(auth);
       localStorage.removeItem('token');
-    } catch (error) {
-      throw new Error('Logout failed');
+    } catch (error: any) {
+      console.error('Logout error:', error);
+      throw new Error(error.message || 'Logout failed');
     }
-  },
+  }
 };
 
 export const tasksAPI = {

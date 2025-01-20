@@ -82,7 +82,7 @@
 
 1. **Clone the repository**
    ```bash
-   git clone https://github.com/tarunerror/remote-team-hub.git
+   git clone https://github.com/yourusername/remote-team-hub.git
    cd remote-team-hub
    ```
 
@@ -145,5 +145,5 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ---
 
 <div align="center">
-  <sub>Built with ❤️ by Tarun Gautam</sub>
+  <sub>Built with ❤️ by your team</sub>
 </div>
