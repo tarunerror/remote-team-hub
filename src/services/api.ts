@@ -1,42 +1,37 @@
-import axios from 'axios';
-import { account, databases } from './appwrite';
+import {
+  collection,
+  doc,
+  addDoc,
+  getDoc,
+  getDocs,
+  updateDoc,
+  deleteDoc,
+  query,
+  where,
+  orderBy,
+  serverTimestamp,
+} from 'firebase/firestore';
+import {
+  createUserWithEmailAndPassword,
+  signInWithEmailAndPassword,
+  signOut,
+  signInWithPopup,
+  GoogleAuthProvider,
+  GithubAuthProvider,
+} from 'firebase/auth';
+import { auth, db } from '../config/firebase';
 
-const baseURL = import.meta.env.VITE_API_URL;
-
-const api = axios.create({
-  baseURL,
-  headers: {
-    'Content-Type': 'application/json',
-  },
-});
-
-// Add token to requests if it exists
-api.interceptors.request.use((config) => {
-  const token = localStorage.getItem('token');
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
-  }
-  return config;
-});
-
-// Handle response errors
-api.interceptors.response.use(
-  (response) => response,
-  async (error) => {
-    if (error.response?.status === 401) {
-      localStorage.removeItem('token');
-      window.location.href = '/login';
-    }
-    return Promise.reject(error);
-  }
-);
+const googleProvider = new GoogleAuthProvider();
+const githubProvider = new GithubAuthProvider();
 
 export const authAPI = {
   login: async (email: string, password: string) => {
     try {
-      const session = await account.createEmailSession(email, password);
-      const user = await account.get();
-      return { token: session.$id, user };
+      const userCredential = await signInWithEmailAndPassword(auth, email, password);
+      return {
+        token: await userCredential.user.getIdToken(),
+        user: userCredential.user
+      };
     } catch (error) {
       throw new Error('Login failed');
     }
@@ -44,11 +39,12 @@ export const authAPI = {
 
   loginWithOAuth: async (provider: 'github' | 'google') => {
     try {
-      return await account.createOAuth2Session(
-        provider,
-        `${window.location.origin}/auth/callback`,
-        `${window.location.origin}/login`
-      );
+      const authProvider = provider === 'google' ? googleProvider : githubProvider;
+      const result = await signInWithPopup(auth, authProvider);
+      return {
+        token: await result.user.getIdToken(),
+        user: result.user
+      };
     } catch (error) {
       throw new Error(`${provider} login failed`);
     }
@@ -56,8 +52,18 @@ export const authAPI = {
 
   register: async (name: string, email: string, password: string) => {
     try {
-      await account.create('unique()', email, password, name);
-      return await authAPI.login(email, password);
+      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+      await updateDoc(doc(db, 'users', userCredential.user.uid), {
+        name,
+        email,
+        role: 'user',
+        status: 'online',
+        createdAt: serverTimestamp()
+      });
+      return {
+        token: await userCredential.user.getIdToken(),
+        user: userCredential.user
+      };
     } catch (error) {
       throw new Error('Registration failed');
     }
@@ -65,7 +71,7 @@ export const authAPI = {
 
   logout: async () => {
     try {
-      await account.deleteSession('current');
+      await signOut(auth);
       localStorage.removeItem('token');
     } catch (error) {
       throw new Error('Logout failed');
@@ -76,11 +82,9 @@ export const authAPI = {
 export const tasksAPI = {
   getTasks: async () => {
     try {
-      const response = await databases.listDocuments(
-        import.meta.env.VITE_APPWRITE_PROJECT_ID,
-        'tasks'
-      );
-      return response.documents;
+      const tasksRef = collection(db, 'tasks');
+      const querySnapshot = await getDocs(tasksRef);
+      return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
     } catch (error) {
       throw new Error('Failed to fetch tasks');
     }
@@ -88,12 +92,11 @@ export const tasksAPI = {
 
   createTask: async (taskData: any) => {
     try {
-      return await databases.createDocument(
-        import.meta.env.VITE_APPWRITE_PROJECT_ID,
-        'tasks',
-        'unique()',
-        taskData
-      );
+      const docRef = await addDoc(collection(db, 'tasks'), {
+        ...taskData,
+        createdAt: serverTimestamp()
+      });
+      return { id: docRef.id, ...taskData };
     } catch (error) {
       throw new Error('Failed to create task');
     }
@@ -101,12 +104,12 @@ export const tasksAPI = {
 
   updateTask: async (id: string, taskData: any) => {
     try {
-      return await databases.updateDocument(
-        import.meta.env.VITE_APPWRITE_PROJECT_ID,
-        'tasks',
-        id,
-        taskData
-      );
+      const taskRef = doc(db, 'tasks', id);
+      await updateDoc(taskRef, {
+        ...taskData,
+        updatedAt: serverTimestamp()
+      });
+      return { id, ...taskData };
     } catch (error) {
       throw new Error('Failed to update task');
     }
@@ -114,11 +117,7 @@ export const tasksAPI = {
 
   deleteTask: async (id: string) => {
     try {
-      await databases.deleteDocument(
-        import.meta.env.VITE_APPWRITE_PROJECT_ID,
-        'tasks',
-        id
-      );
+      await deleteDoc(doc(db, 'tasks', id));
       return true;
     } catch (error) {
       throw new Error('Failed to delete task');
@@ -129,12 +128,14 @@ export const tasksAPI = {
 export const chatAPI = {
   getMessages: async (channelId: string) => {
     try {
-      const response = await databases.listDocuments(
-        import.meta.env.VITE_APPWRITE_PROJECT_ID,
-        'messages',
-        [databases.orderDesc('$createdAt')]
+      const messagesRef = collection(db, 'messages');
+      const q = query(
+        messagesRef,
+        where('channelId', '==', channelId),
+        orderBy('createdAt', 'desc')
       );
-      return response.documents;
+      const querySnapshot = await getDocs(q);
+      return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
     } catch (error) {
       throw new Error('Failed to fetch messages');
     }
@@ -142,12 +143,11 @@ export const chatAPI = {
 
   sendMessage: async (messageData: any) => {
     try {
-      return await databases.createDocument(
-        import.meta.env.VITE_APPWRITE_PROJECT_ID,
-        'messages',
-        'unique()',
-        messageData
-      );
+      const docRef = await addDoc(collection(db, 'messages'), {
+        ...messageData,
+        createdAt: serverTimestamp()
+      });
+      return { id: docRef.id, ...messageData };
     } catch (error) {
       throw new Error('Failed to send message');
     }
@@ -155,11 +155,7 @@ export const chatAPI = {
 
   deleteMessage: async (id: string) => {
     try {
-      await databases.deleteDocument(
-        import.meta.env.VITE_APPWRITE_PROJECT_ID,
-        'messages',
-        id
-      );
+      await deleteDoc(doc(db, 'messages', id));
       return true;
     } catch (error) {
       throw new Error('Failed to delete message');
@@ -170,7 +166,11 @@ export const chatAPI = {
 export const userAPI = {
   getProfile: async () => {
     try {
-      return await account.get();
+      const user = auth.currentUser;
+      if (!user) throw new Error('No user logged in');
+      
+      const userDoc = await getDoc(doc(db, 'users', user.uid));
+      return userDoc.data();
     } catch (error) {
       throw new Error('Failed to fetch profile');
     }
@@ -178,7 +178,14 @@ export const userAPI = {
 
   updateProfile: async (userData: any) => {
     try {
-      return await account.updateName(userData.name);
+      const user = auth.currentUser;
+      if (!user) throw new Error('No user logged in');
+
+      await updateDoc(doc(db, 'users', user.uid), {
+        ...userData,
+        updatedAt: serverTimestamp()
+      });
+      return userData;
     } catch (error) {
       throw new Error('Failed to update profile');
     }
@@ -186,11 +193,9 @@ export const userAPI = {
 
   getUsers: async () => {
     try {
-      const response = await databases.listDocuments(
-        import.meta.env.VITE_APPWRITE_PROJECT_ID,
-        'users'
-      );
-      return response.documents;
+      const usersRef = collection(db, 'users');
+      const querySnapshot = await getDocs(usersRef);
+      return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
     } catch (error) {
       throw new Error('Failed to fetch users');
     }
@@ -198,17 +203,23 @@ export const userAPI = {
 
   updateStatus: async (status: string) => {
     try {
-      const user = await account.get();
-      return await databases.updateDocument(
-        import.meta.env.VITE_APPWRITE_PROJECT_ID,
-        'users',
-        user.$id,
-        { status }
-      );
+      const user = auth.currentUser;
+      if (!user) throw new Error('No user logged in');
+
+      await updateDoc(doc(db, 'users', user.uid), {
+        status,
+        updatedAt: serverTimestamp()
+      });
+      return { status };
     } catch (error) {
       throw new Error('Failed to update status');
     }
   },
 };
 
-export default api;
+export default {
+  auth: authAPI,
+  tasks: tasksAPI,
+  chat: chatAPI,
+  users: userAPI,
+};

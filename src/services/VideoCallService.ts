@@ -3,8 +3,8 @@ import AgoraRTC, {
   ICameraVideoTrack,
   IMicrophoneAudioTrack,
 } from 'agora-rtc-sdk-ng';
-import { databases } from '../config/appwrite';
-import { COLLECTIONS, DATABASES } from '../config/appwrite';
+import { db } from '../config/firebase';
+import { collection, addDoc } from 'firebase/firestore';
 
 class VideoCallService {
   private client: IAgoraRTCClient;
@@ -20,7 +20,7 @@ class VideoCallService {
 
   async initializeCall(channelId: string, userId: string) {
     try {
-      // Get token from your token server or Appwrite function
+      // Get token from your token server
       const token = await this.getAgoraToken(channelId, userId);
       
       await this.client.join(
@@ -35,18 +35,13 @@ class VideoCallService {
 
       await this.client.publish([this.localAudioTrack, this.localVideoTrack]);
 
-      // Save call details to Appwrite
-      await databases.createDocument(
-        DATABASES.MAIN,
-        COLLECTIONS.CALLS,
-        'unique()',
-        {
-          channelId,
-          userId,
-          startTime: new Date().toISOString(),
-          status: 'active',
-        }
-      );
+      // Save call details to Firebase
+      await addDoc(collection(db, 'calls'), {
+        channelId,
+        userId,
+        startTime: new Date().toISOString(),
+        status: 'active',
+      });
 
       return {
         localAudioTrack: this.localAudioTrack,
@@ -70,7 +65,6 @@ class VideoCallService {
   }
 
   private async getAgoraToken(channelId: string, userId: string): Promise<string> {
-    // Implement token generation using Appwrite function or your token server
     const response = await fetch(`${import.meta.env.VITE_API_URL}/agora/token`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },

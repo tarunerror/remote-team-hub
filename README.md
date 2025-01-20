@@ -41,25 +41,21 @@
 ### 🎯 Core Features
 
 - **📱 Responsive Design**
-
   - Seamless experience across all devices
   - Beautiful animations and transitions
   - Modern, clean interface
 
 - **💬 Real-time Communication**
-
   - Instant messaging with typing indicators
   - File sharing and emoji support
   - Thread discussions and mentions
 
 - **📋 Task Management**
-
   - Kanban board with drag-and-drop
   - Task assignments and due dates
   - Priority levels and status tracking
 
 - **🎥 Video Conferencing**
-
   - HD video calls with screen sharing
   - Meeting scheduling and reminders
   - Recording capabilities
@@ -77,60 +73,38 @@
 [![TypeScript](https://img.shields.io/badge/TypeScript-007ACC?style=for-the-badge&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
 [![Redux](https://img.shields.io/badge/Redux-593D88?style=for-the-badge&logo=redux&logoColor=white)](https://redux.js.org/)
 [![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-38B2AC?style=for-the-badge&logo=tailwind-css&logoColor=white)](https://tailwindcss.com/)
-[![Node.js](https://img.shields.io/badge/Node.js-339933?style=for-the-badge&logo=nodedotjs&logoColor=white)](https://nodejs.org/)
-[![Express.js](https://img.shields.io/badge/Express.js-000000?style=for-the-badge&logo=express&logoColor=white)](https://expressjs.com/)
+[![Firebase](https://img.shields.io/badge/Firebase-FFCA28?style=for-the-badge&logo=firebase&logoColor=black)](https://firebase.google.com/)
 [![Socket.io](https://img.shields.io/badge/Socket.io-010101?style=for-the-badge&logo=socket.io&logoColor=white)](https://socket.io/)
-[![Appwrite](https://img.shields.io/badge/Appwrite-F02E65?style=for-the-badge&logo=appwrite&logoColor=white)](https://appwrite.io/)
 
 </div>
 
 ## 🚀 Getting Started
 
 1. **Clone the repository**
-
    ```bash
    git clone https://github.com/tarunerror/remote-team-hub.git
    cd remote-team-hub
    ```
 
 2. **Install dependencies**
-
    ```bash
-   # Install frontend dependencies
-   npm install
-
-   # Install backend dependencies
-   cd backend
    npm install
    ```
 
 3. **Set up environment variables**
-
    ```bash
    # Frontend (.env)
-   VITE_API_URL=http://localhost:5000
-   VITE_APPWRITE_ENDPOINT=your_appwrite_endpoint
-   VITE_APPWRITE_PROJECT_ID=your_project_id
+   VITE_FIREBASE_API_KEY=your_firebase_api_key
+   VITE_FIREBASE_AUTH_DOMAIN=your_firebase_auth_domain
+   VITE_FIREBASE_PROJECT_ID=your_firebase_project_id
+   VITE_FIREBASE_STORAGE_BUCKET=your_firebase_storage_bucket
+   VITE_FIREBASE_MESSAGING_SENDER_ID=your_firebase_messaging_sender_id
+   VITE_FIREBASE_APP_ID=your_firebase_app_id
    VITE_AGORA_APP_ID=your_agora_app_id
-
-   # Backend (.env)
-   PORT=5000
-   NODE_ENV=development
-   JWT_SECRET=your_jwt_secret
-   APPWRITE_ENDPOINT=your_appwrite_endpoint
-   APPWRITE_PROJECT_ID=your_project_id
-   APPWRITE_API_KEY=your_api_key
    ```
 
-4. **Start the development servers**
-
+4. **Start the development server**
    ```bash
-   # Start backend server
-   cd backend
-   npm run dev
-
-   # Start frontend server (in a new terminal)
-   cd frontend
    npm run dev
    ```
 
@@ -139,14 +113,13 @@
 ```mermaid
 graph TD
     A[Frontend - React/TypeScript] --> B[Redux Store]
-    B --> C[API Layer]
-    C --> D[Backend - Node.js/Express]
-    D --> E[Appwrite]
-    D --> F[Socket.io]
-    E --> G[Authentication]
-    E --> H[Database]
-    E --> I[Storage]
-    F --> J[Real-time Events]
+    B --> C[Firebase SDK]
+    C --> D[Firebase Services]
+    D --> E[Authentication]
+    D --> F[Firestore]
+    D --> G[Storage]
+    D --> H[Real-time Database]
+    I[Socket.io] --> J[Real-time Events]
 ```
 
 ## 🤝 Contributing
@@ -157,11 +130,15 @@ graph TD
 4. Push to the branch (`git push origin feature/amazing-feature`)
 5. Open a Pull Request
 
+## 📄 License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
 ## 🙏 Acknowledgments
 
 - [React](https://reactjs.org/) - Frontend library
 - [Tailwind CSS](https://tailwindcss.com/) - Styling
-- [Appwrite](https://appwrite.io/) - Backend as a Service
+- [Firebase](https://firebase.google.com/) - Backend as a Service
 - [Socket.io](https://socket.io/) - Real-time communication
 - [Lucide Icons](https://lucide.dev/) - Beautiful icons
 
