@@ -7,7 +7,6 @@ import {
   FileText,
   BarChart,
   X,
-  User,
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -24,26 +23,28 @@ const Sidebar: React.FC<SidebarProps> = ({ onClose }) => {
   ];
 
   return (
-    <div className="bg-theme-foreground glass h-full shadow-lg perspective-container w-[280px]">
+    <div className="bg-white h-full shadow-lg perspective-container w-[280px]">
       <div className="h-full flex flex-col card-3d">
-        <div className="flex items-center justify-between p-3 sm:p-4 lg:hidden border-b border-white/10">
-          <span className="font-semibold text-theme">Menu</span>
+        <div className="flex items-center justify-between p-3 sm:p-4 lg:hidden border-b">
+          <span className="font-semibold text-gray-900">Menu</span>
           <button
             onClick={onClose}
-            className="p-1.5 rounded-md hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-white/30"
+            className="p-1.5 rounded-md hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-gray-200"
             aria-label="Close menu"
           >
-            <X className="h-5 w-5 text-theme" />
+            <X className="h-5 w-5" />
           </button>
         </div>
         <div className="flex-1 flex flex-col pt-4 sm:pt-5 pb-4 overflow-y-auto">
           <div className="flex items-center flex-shrink-0 px-3 sm:px-4">
             <div className="animate-float">
-              <div className="h-10 w-10 rounded-xl bg-gradient-to-r from-primary to-secondary flex items-center justify-center">
-                <User className="h-6 w-6 text-white" />
-              </div>
+              <img
+                className="h-6 w-6 sm:h-8 sm:w-8"
+                src="/logo.svg"
+                alt="Remote Team Hub"
+              />
             </div>
-            <span className="ml-2 text-lg font-semibold text-theme glow-text">
+            <span className="ml-2 text-base sm:text-lg font-semibold text-gray-900 text-3d">
               Team Hub
             </span>
           </div>
@@ -54,14 +55,14 @@ const Sidebar: React.FC<SidebarProps> = ({ onClose }) => {
                 to={item.path}
                 onClick={onClose}
                 className={({ isActive }) =>
-                  `group flex items-center px-2 py-1.5 sm:py-2 text-sm font-medium rounded-xl transition-all duration-300 ${
+                  `group flex items-center px-2 py-1.5 sm:py-2 text-sm font-medium rounded-md transition-all duration-300 card-3d ${
                     isActive
-                      ? 'bg-gradient-to-r from-primary to-secondary text-white glow'
-                      : 'text-theme hover:bg-white/10'
+                      ? 'animate-gradient text-white animate-glow'
+                      : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
                   }`
                 }
               >
-                <item.icon className={`mr-3 h-5 w-5 ${
+                <item.icon className={`mr-3 h-4 w-4 sm:h-5 sm:w-5 ${
                   location.pathname === item.path ? 'animate-float' : ''
                 }`} />
                 {item.label}
